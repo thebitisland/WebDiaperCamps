@@ -334,7 +334,7 @@ class Application extends Container implements HttpKernelInterface, ResponsePrep
     }
     public static function getBootstrapFile()
     {
-        return '/home/thebitisland/camps.thebitisland.com/vendor/laravel/framework/src/Illuminate/Foundation' . '/start.php';
+        return '/home/lambda/sites/WebDiaperCamps/vendor/laravel/framework/src/Illuminate/Foundation' . '/start.php';
     }
     public function startExceptionHandling()
     {
@@ -9963,7 +9963,7 @@ class PrettyPageHandler extends Handler
             return Handler::DONE;
         }
         if (!($resources = $this->getResourcesPath())) {
-            $resources = '/home/thebitisland/camps.thebitisland.com/vendor/filp/whoops/src/Whoops/Handler' . '/../Resources';
+            $resources = '/home/lambda/sites/WebDiaperCamps/vendor/filp/whoops/src/Whoops/Handler' . '/../Resources';
         }
         $templateFile = "{$resources}/pretty-template.php";
         $cssFile = "{$resources}/pretty-page.css";
