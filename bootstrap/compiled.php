@@ -298,6 +298,7 @@ class Application extends Container implements HttpKernelInterface, ResponsePrep
     protected $serviceProviders = array();
     protected $loadedProviders = array();
     protected $deferredServices = array();
+    protected static $requestClass = 'Illuminate\\Http\\Request';
     public function __construct(Request $request = null)
     {
         $this['request'] = $this->createRequest($request);
@@ -307,12 +308,13 @@ class Application extends Container implements HttpKernelInterface, ResponsePrep
     }
     protected function createRequest(Request $request = null)
     {
-        return $request ?: Request::createFromGlobals();
+        return $request ?: static::onRequest('createFromGlobals');
     }
     public function setRequestForConsoleEnvironment()
     {
         $url = $this['config']->get('app.url', 'http://localhost');
-        $this->instance('request', Request::create($url, 'GET', array(), array(), array(), $_SERVER));
+        $parameters = array($url, 'GET', array(), array(), array(), $_SERVER);
+        $this->instance('request', static::onRequest('create', $parameters));
     }
     public function redirectIfTrailingSlash()
     {
@@ -585,6 +587,17 @@ class Application extends Container implements HttpKernelInterface, ResponsePrep
     public function setDeferredServices(array $services)
     {
         $this->deferredServices = $services;
+    }
+    public static function requestClass($class = null)
+    {
+        if (!is_null($class)) {
+            static::$requestClass = $class;
+        }
+        return static::$requestClass;
+    }
+    public static function onRequest($method, $parameters = array())
+    {
+        return forward_static_call_array(array(static::requestClass(), $method), $parameters);
     }
     public function __get($key)
     {
@@ -2154,9 +2167,13 @@ class NativeSessionStorage implements SessionStorageInterface
         }
         $ret = session_regenerate_id($destroy);
         session_write_close();
-        $backup = $_SESSION;
-        session_start();
-        $_SESSION = $backup;
+        if (isset($_SESSION)) {
+            $backup = $_SESSION;
+            session_start();
+            $_SESSION = $backup;
+        } else {
+            session_start();
+        }
         return $ret;
     }
     public function save()
@@ -5536,7 +5553,8 @@ abstract class Model implements ArrayAccess, ArrayableInterface, JsonableInterfa
     {
         $query = $this->newQuery()->where($this->getKeyName(), $this->getKey());
         if ($this->softDelete) {
-            $query->update(array(static::DELETED_AT => $this->freshTimestamp()));
+            $this->{static::DELETED_AT} = $time = $this->freshTimestamp();
+            $query->update(array(static::DELETED_AT => $time));
         } else {
             $query->delete();
         }
@@ -9864,15 +9882,18 @@ class Run
             }
         }
         $output = ob_get_clean();
-        if ($this->allowQuit()) {
-            echo $output;
-            die;
-        } else {
-            if ($this->writeToOutput()) {
-                echo $output;
+        if ($this->writeToOutput()) {
+            if ($handlerResponse == Handler::QUIT && $this->allowQuit()) {
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
             }
-            return $output;
+            echo $output;
         }
+        if ($handlerResponse == Handler::QUIT && $this->allowQuit()) {
+            die;
+        }
+        return $output;
     }
     public function handleError($level, $message, $file = null, $line = null)
     {
