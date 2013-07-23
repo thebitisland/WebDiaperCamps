@@ -11,7 +11,4 @@
 |
 */
 
-Route::get('/', function()
-{
-	return "Potato";
-});
+Route::get('/', 'HomeController@showWelcome');
