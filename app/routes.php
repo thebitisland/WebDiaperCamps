@@ -14,5 +14,5 @@
 Route::get('/', 'HomeController@showWelcome');
 Route::get('DBversion', function()
 {
-	return "1";
+	return "2";
 });
