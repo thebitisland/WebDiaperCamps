@@ -12,7 +12,4 @@
 */
 
 Route::get('/', 'HomeController@showWelcome');
-Route::get('DBversion', function()
-{
-	return "2";
-});
+Route::get('DBversion', 'HomeController@updateDBVersion');
